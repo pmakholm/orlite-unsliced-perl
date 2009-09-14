@@ -392,7 +392,7 @@ sub $_->{name} {
 	($_->{fk}->[1]->{class}\->select('where $_->{fk}->[1]->{pk}->[0] = ?', \$_[0]->{$_->{name}}))[0];
 }
 END_DIRECT
-sub $_->{name} {
+sub $_->{name} : lvalue {
 	\$_[0]->{$_->{name}};
 }
 END_ACCESSOR
