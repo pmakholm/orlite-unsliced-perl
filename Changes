@@ -1,0 +1,110 @@
+Changes for Perl extension ORLite
+
+1.25 Sat 15 Aug 2009
+	- Adding base and table metadata methods to each class to support
+	  the creation of support/extension methods
+
+1.24 Sat 15 Aug 2009
+	- Adding support for an iterate method
+
+1.23 Thu 11 Jun 2009 
+	- Fixed a bug in method ->delete which deleted more than the actual
+	  object in case the primary key consist of more than one column.
+	  Added basic support for such primary keys with more than one column.
+
+1.22 Mon  1 Jun 2009
+	- Updated to Module::Install::DSL 0.91
+	- Split out debug/eval as (undocument) dval function
+	- App support for a (currently undocumented) 'append'
+	  param to allow sub-classes like ORLite::Mirror to merge
+	  in additional code to the generated class.
+
+1.21 Sun 24 May 2009
+	- Updated to Module::Install::DSL 0.88
+	- Added commit_begin and rollback_begin to allow persisting
+	  of the connection between successive transactions.
+
+1.20 Thu 12 Feb 2009
+	- Auto-create parent directory for ORLite files
+	- Add root method ->sqlite which returns the path to the
+	  sqlite file for that database.
+
+1.19 Tue  3 Feb 2009
+	- Adding support for using a CODE reference in the 'create'
+	  parameter, so that the schema setup can be provided directly
+	  in the ORLite initialisation.
+
+1.18 Wed 14 Jan 2009
+	- Adding an ->orlite method to return the version number of the
+	  ORLite module that was used to generate the distribution.
+
+1.17 Sat  3 Jan 2009
+	- Adding a ->truncate method to each table
+
+1.16 Sat 14 Dec 2008
+	- The fact that I didn't need to change ORLite for ORLite::Migrate
+	  suggests that it's stable enough for general use (pending 2.0)
+
+0.15 Wed 24 Sep 2008
+	- Adding support for writable pragmas
+	- Adding tests for pragmas, schema_version and user_version
+
+0.14 Tue 23 Sep 2008
+	- Removed the last remnants of %ORLite::DSN and %ORLite::DBH.
+	- Added support for the "create" param to allow database creation
+
+0.13 Fri 19 Sep 2008
+	- Fixed critical bug introduced in 0.10 or somewhere around there,
+	  where column accessors were not defined for readonly classes.
+	  (This fatally killed ORLite::Mirror)
+
+0.12 Mon 15 Sep 2008
+	- Don't store the database values in a shared hash any more
+	  (Makes the classes self-contained and able to run without ORLite)
+        - Add a tables param to the import, to allow the base database
+          connectivity class to be created without the table classes.
+
+0.11 Tue  9 Sep 2008
+	- If we aren't debugging we don't need to write the temp file
+
+0.10 Wed  6 Aug 2008
+        - Quote all column names for explicitness
+
+0.09 Fri 11 Jul 2008
+	- Adding pragma method to the top package
+	- Adding user_version import param to provide the ability
+	  to lock the Perl code against a known-good schema.
+
+0.08 Tue 24 Jun 2008
+	- Adding an experimental -DEBUG option
+
+0.07 Wed 28 May 2008
+	- Actually trust the package param
+
+0.06 Wed 28 May 2008
+	- Don't add transaction support if we are readonly
+
+0.05 Tue 27 May 2008
+	- Minor bug fixes in the ->import method
+	- Correcting the RT link in the POD.
+
+0.04 Tue 27 May 2008
+	- Added ->import( \%hash ) support.
+	- Added support for custom passing of the target package.
+	- Added support for readonly database loading
+	  (We need this for doing mirrored remote db support)
+	- Autodetect readonly SQLite files
+
+0.03 Thu 22 May 2008
+	- Added initial foreign key support
+	- Added the POD documentation for ORLite root packages
+	- Added File::Spec dependency
+
+0.02 Mon 19 May 2008
+	- Added class and instance ->delete
+	- Added ->new
+	- Added ->insert
+	- Added ->create
+
+0.01 Fri 16 May 2008
+	- Created an initial experimental support with only ->select

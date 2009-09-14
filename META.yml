@@ -1,0 +1,35 @@
+---
+abstract: 'Extremely light weight SQLite-specific ORM'
+author:
+  - 'Adam Kennedy <adamk@cpan.org>'
+build_requires:
+  ExtUtils::MakeMaker: 6.42
+  Test::More: 0.47
+configure_requires:
+  ExtUtils::MakeMaker: 6.42
+distribution_type: module
+generated_by: 'Module::Install version 0.91'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+module_name: ORLite
+name: ORLite
+no_index:
+  directory:
+    - inc
+    - t
+requires:
+  DBD::SQLite: 1.25
+  DBI: 1.607
+  File::Basename: 0
+  File::Path: 2.04
+  File::Spec: 0.80
+  File::Temp: 0.20
+  Params::Util: 0.33
+  perl: 5.6.0
+resources:
+  ChangeLog: http://fisheye2.atlassian.com/changelog/cpan/trunk/ORLite
+  license: http://dev.perl.org/licenses/
+  repository: http://svn.ali.as/cpan/trunk/ORLite
+version: 1.25
