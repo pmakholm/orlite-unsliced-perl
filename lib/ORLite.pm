@@ -397,6 +397,9 @@ sub $_->{name} {
 }
 END_DIRECT
 sub $_->{name} {
+    if(\@_ > 1) {
+        \$_[0]->[$mapping{$_->{name}}] = \$_[1];
+    }
 	\$_[0]->[$mapping{$_->{name}}];
 }
 END_ACCESSOR
