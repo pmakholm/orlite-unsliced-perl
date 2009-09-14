@@ -1,0 +1,12 @@
+ATTENTION!
+
+This is not the original ORLite.pm. This fork serves a a repository for
+testing some optimizations.
+
+Divergence from the real ORLite.pm
+
+  - Objects are array references
+  - Most select statemtns are executed without slicing into hashes
+  - Simple accessors are lvalue accessors.
+
+For the real ORLite.pm see http://search.cpan.org/dist/ORLite/
