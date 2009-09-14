@@ -291,6 +291,9 @@ END_PERL
 			my @columns = @{ $table->{columns} };
 			my @names   = map { $_->{name} } @columns;
 
+            my $i;
+            my %mapping = map { $_ => $i++ } @names;
+
 			# Generate the elements in all packages
 			$code .= <<"END_PERL";
 package $table->{class};
@@ -303,7 +306,7 @@ sub select {
 	my \$class = shift;
 	my \$sql   = '$sql->{select} ';
 	   \$sql  .= shift if \@_;
-	my \$rows  = $pkg->selectall_arrayref( \$sql, { Slice => {} }, \@_ );
+	my \$rows  = $pkg->selectall_arrayref( \$sql, {}, \@_ );
 	bless( \$_, '$table->{class}' ) foreach \@\$rows;
 	wantarray ? \@\$rows : \$rows;
 }
@@ -322,7 +325,8 @@ sub iterate {
 	   \$sql  .= shift if \@_;
 	my \$sth   = $pkg->prepare( \$sql );
 	\$sth->execute( \@_ );
-	while ( \$_ = \$sth->fetchrow_hashref ) {
+	while ( \$_ = \$sth->fetchrow_arrayref ) {
+        \$_ = [ \@{ \$_ } ];
 		bless( \$_, '$table->{class}' );
 		\$call->() or last;
 	}
@@ -333,21 +337,21 @@ END_PERL
 
 			# Generate the elements for tables with primary keys
 			if ( defined $table->{pk} and ! $readonly ) {
-				my $nattr = join "\n", map { "\t\t$_ => \$attr{$_}," } @names;
-				my $iattr = join "\n", map { "\t\t\$self->{$_},"       } @names;
+				my $nattr = join "\n", map { "\t\t\$attr{$_}," } @names;
+                my $pk_index = $mapping{ $table->{pk}->[0] };
 				my $fill_pk = scalar @{$table->{pk}} == 1 
-					    ? "\t\$self->{$table->{pk}->[0]} = \$dbh->func('last_insert_rowid') unless \$self->{$table->{pk}->[0]};"
+					    ? "\t\$self->[$pk_index] = \$dbh->func('last_insert_rowid') unless \$self->[$pk_index];"
 					    : q{};
 				my $where_pk      = join(' and ', map("$_ = ?", @{$table->{pk}}));
-				my $where_pk_attr = join("\n", map("\t\t\$self->{$_},", @{$table->{pk}}));				
+				my $where_pk_attr = join("\n", map("\t\t\$self->[$mapping{$_}],", @{$table->{pk}}));				
 				$code .= <<"END_PERL";
 
 sub new {
 	my \$class = shift;
 	my \%attr  = \@_;
-	bless {
+	bless [
 $nattr
-	}, \$class;
+	], \$class;
 }
 
 sub create {
@@ -358,7 +362,7 @@ sub insert {
 	my \$self = shift;
 	my \$dbh  = $pkg->dbh;
 	\$dbh->do('$sql->{insert}', {},
-$iattr
+        \@\$self
 	);
 $fill_pk	
 	return \$self;
@@ -389,11 +393,11 @@ END_PERL
 		# Generate the accessors
 		$code .= join "\n\n", map { $_->{fk} ? <<"END_DIRECT" : <<"END_ACCESSOR" } @columns;
 sub $_->{name} {
-	($_->{fk}->[1]->{class}\->select('where $_->{fk}->[1]->{pk}->[0] = ?', \$_[0]->{$_->{name}}))[0];
+	($_->{fk}->[1]->{class}\->select('where $_->{fk}->[1]->{pk}->[0] = ?', \$_[0]->[$mapping{$_->{name}}]))[0];
 }
 END_DIRECT
 sub $_->{name} {
-	\$_[0]->{$_->{name}};
+	\$_[0]->[$mapping{$_->{name}}];
 }
 END_ACCESSOR
 
