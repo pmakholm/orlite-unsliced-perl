@@ -396,10 +396,7 @@ sub $_->{name} {
 	($_->{fk}->[1]->{class}\->select('where $_->{fk}->[1]->{pk}->[0] = ?', \$_[0]->[$mapping{$_->{name}}]))[0];
 }
 END_DIRECT
-sub $_->{name} {
-    if(\@_ > 1) {
-        \$_[0]->[$mapping{$_->{name}}] = \$_[1];
-    }
+sub $_->{name} : lvalue {
 	\$_[0]->[$mapping{$_->{name}}];
 }
 END_ACCESSOR
