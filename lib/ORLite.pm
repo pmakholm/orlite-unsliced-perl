@@ -303,8 +303,8 @@ sub select {
 	my \$class = shift;
 	my \$sql   = '$sql->{select} ';
 	   \$sql  .= shift if \@_;
-	my \$rows  = $pkg->selectall_arrayref( \$sql, { Slice => {} }, \@_ );
-	bless( \$_, '$table->{class}' ) foreach \@\$rows;
+	my \$rows  = $pkg->selectall_arrayref( \$sql, { }, \@_ );
+	do { my \$row; \@{ \$row }{qw( @names )} = \@\$_; \$_ = \$row;  bless( \$_, '$table->{class}' ) } foreach \@\$rows;
 	wantarray ? \@\$rows : \$rows;
 }
 
