@@ -1,4 +1,4 @@
-package ORLite;
+package ORLite::Unsliced;
 
 # See POD at end of file for documentation
 
