@@ -1,4 +1,4 @@
-package ORLite::Unsliced;
+package ORLite::Array;
 
 # See POD at end of file for documentation
 
@@ -15,7 +15,7 @@ use DBD::SQLite  1.25 ();
 
 use vars qw{$VERSION};
 BEGIN {
-	$VERSION = '1.25';
+	$VERSION = '0.01';
 }
 
 BEGIN {
@@ -456,281 +456,81 @@ __END__
 
 =head1 NAME
 
-ORLite - Extremely light weight SQLite-specific ORM
+ORLite::Array - Array based objects for ORLite
 
 =head1 SYNOPSIS
 
+  # Used like the regular ORLite:
   package Foo;
 
-  use strict;
-  use ORLite 'data/sqlite.db';
+  use ORLite::Array 'data/sqlite.db';
 
   my @awesome = Foo::Person->select(
      'where first_name = ?',
      'Adam',
   );
 
+  # Or used with extensions:
+  package Foo;
+
+  use ORLite::Array ();
+  use ORLite::Mirror 'http://myserver/path/mydb.sqlite';
+
+
 =head1 DESCRIPTION
 
-L<SQLite> is a light single file SQL database that provides an
-excellent platform for embedded storage of structured data.
+ORLite is a light weight ORM specifically designed for used with SQLite
+databases. By changing ORLite's hash based objects to using array based
+objects we can cut away some time spend in DBI slicing the objects.
 
-However, while it is superficially similar to a regular server-side SQL
-database, SQLite has some significant attributes that make using it like
-a traditional database difficult.
+For some sample examples this has show the average time spend in the select()
+method going from 350 µs/call to 160 µs/call.
 
-For example, SQLite is extremely fast to connect to compared to server
-databases (1000 connections per second is not unknown) and is
-particularly bad at concurrency, as it can only lock transactions at
-a database-wide level.
+=head1 ACCESSORS
 
-This role as a superfast internal data store can clash with the roles and
-designs of traditional object-relational modules like L<Class::DBI> or
-L<DBIx::Class>.
+B<THIS FEATURE IS EXPERIMENTAL AND SUBJECT TO CHANGE WITHOUT NOTICE>
 
-What this situation would seem to need is an object-relation system that is
-designed specifically for SQLite and is aligned with its idiosyncracies.
+Encapsulation isn't a goal. With ORLite you were able to access the individual
+keys of the hash. This isn't an usable posibility with array based objects. As
+an alternative ORLite::Array marks accessors for non foreign key fields as
+lvalue methods. This makes it possible to update attributes this way:
 
-ORLite is an object-relation system specifically tailored for SQLite that
-follows many of the same principles as the ::Tiny series of modules and
-has a design and feature set that aligns directly to the capabilities of
-SQLite.
-
-Further documentation will be available at a later time, but the synopsis
-gives a pretty good idea of how it works.
-
-=head1 How it Works
-
-In short, ORLite discovers the schema of a SQLite database, and then uses
-code generation to build a set of packages for talking to that database.
-
-In the simplest form, your target root package "uses" ORLite, which will do
-the schema discovery and code generation at compile-time.
-
-When called, ORLite generates two types of package.
-
-Firstly, it builds database connectivity, transaction support, and other
-purely database level functionality into your root namespace.
-
-Then it will create one sub-package underneath the root package for each
-table contained in the database.
-
-=head1 ROOT PACKAGE METHODS
-
-All ORLite root packages receive an identical set of methods for
-controlling connections to the database, transactions, and the issueing
-of queries of various types to the database.
-
-The example root package Foo::Bar is used in any examples.
-
-All methods are static, ORLite does not allow the creation of a Foo::Bar
-object (although you may wish to add this capability yourself).
-
-=head2 dsn
-
-  my $string = Foo::Bar->dsn;
-
-The C<dsn> accessor returns the dbi connection string used to connect
-to the SQLite database as a string.
-
-=head2 dbh
-
-  my $handle = Foo::Bar->dbh;
-
-To reliably prevent potential SQLite deadlocks resulting from multiple
-connections in a single process, each ORLite package will only ever
-maintain a single connection to the database.
-
-During a transaction, this will be the same (cached) database handle.
-
-Although in most situations you should not need a direct DBI connection
-handle, the C<dbh> method provides a method for getting a direct
-connection in a way that is compatible with ORLite's connection
-management.
-
-Please note that these connections should be short-lived, you should
-never hold onto a connection beyond the immediate scope.
-
-The transaction system in ORLite is specifically designed so that code
-using the database should never have to know whether or not it is in a
-transation.
-
-Because of this, you should B<never> call the -E<gt>disconnect method
-on the database handles yourself, as the handle may be that of a
-currently running transaction.
-
-Further, you should do your own transaction management on a handle
-provided by the <dbh> method.
-
-In cases where there are extreme needs, and you B<absolutely> have to
-violate these connection handling rules, you should create your own
-completely manual DBI-E<gt>connect call to the database, using the connect
-string provided by the C<dsn> method.
-
-The C<dbh> method returns a L<DBI::db> object, or throws an exception on
-error.
-
-=head2 begin
-
-  Foo::Bar->begin;
-
-The C<begin> method indicates the start of a transaction.
-
-In the same way that ORLite allows only a single connection, likewise
-it allows only a single application-wide transaction.
-
-No indication is given as to whether you are currently in a transaction
-or not, all code should be written neutrally so that it works either way
-or doesn't need to care.
-
-Returns true or throws an exception on error.
-
-=head2 commit
-
-  Foo::Bar->commit;
-
-The C<commit> method commits the current transaction. If called outside
-of a current transaction, it is accepted and treated as a null operation.
-
-Once the commit has been completed, the database connection falls back
-into auto-commit state. If you wish to immediately start another
-transaction, you will need to issue a separate -E<gt>begin call.
-
-Returns true or throws an exception on error.
-
-=head2 rollback
-
-The C<rollback> method rolls back the current transaction. If called outside
-of a current transaction, it is accepted and treated as a null operation.
-
-Once the rollback has been completed, the database connection falls back
-into auto-commit state. If you wish to immediately start another
-transaction, you will need to issue a separate -E<gt>begin call.
-
-If a transaction exists at END-time as the process exits, it will be
-automatically rolled back.
-
-Returns true or throws an exception on error.
-
-=head2 do
-
-  Foo::Bar->do('insert into table (foo, bar) values (?, ?)', {},
-      $foo_value,
-      $bar_value,
+  my $person = Foo::Person->select(
+      'where id = ?', 42
   );
+  $person->age++;
+  $person->weigth += 10;
 
-The C<do> method is a direct wrapper around the equivalent L<DBI> method,
-but applied to the appropriate locally-provided connection or transaction.
+B<THIS FEATURE IS EXPERIMENTAL AND SUBJECT TO CHANGE WITHOUT NOTICE>
 
-It takes the same parameters and has the same return values and error
-behaviour.
+=head1 TODO
 
-=head2 selectall_arrayref
+- Support for updating foreign key fields
 
-The C<selectall_arrayref> method is a direct wrapper around the equivalent
-L<DBI> method, but applied to the appropriate locally-provided connection
-or transaction.
+=head1 COMPATIBILITY
 
-It takes the same parameters and has the same return values and error
-behaviour.
-
-=head2 selectall_hashref
-
-The C<selectall_hashref> method is a direct wrapper around the equivalent
-L<DBI> method, but applied to the appropriate locally-provided connection
-or transaction.
-
-It takes the same parameters and has the same return values and error
-behaviour.
-
-=head2 selectcol_arrayref
-
-The C<selectcol_arrayref> method is a direct wrapper around the equivalent
-L<DBI> method, but applied to the appropriate locally-provided connection
-or transaction.
-
-It takes the same parameters and has the same return values and error
-behaviour.
-
-=head2 selectrow_array
-
-The C<selectrow_array> method is a direct wrapper around the equivalent
-L<DBI> method, but applied to the appropriate locally-provided connection
-or transaction.
-
-It takes the same parameters and has the same return values and error
-behaviour.
-
-=head2 selectrow_arrayref
-
-The C<selectrow_arrayref> method is a direct wrapper around the equivalent
-L<DBI> method, but applied to the appropriate locally-provided connection
-or transaction.
-
-It takes the same parameters and has the same return values and error
-behaviour.
-
-=head2 selectrow_hashref
-
-The C<selectrow_hashref> method is a direct wrapper around the equivalent
-L<DBI> method, but applied to the appropriate locally-provided connection
-or transaction.
-
-It takes the same parameters and has the same return values and error
-behaviour.
-
-=head2 prepare
-
-The C<prepare> method is a direct wrapper around the equivalent
-L<DBI> method, but applied to the appropriate locally-provided connection
-or transaction
-
-It takes the same parameters and has the same return values and error
-behaviour.
-
-In general though, you should try to avoid the use of your own prepared
-statements if possible, although this is only a recommendation and by
-no means prohibited.
-
-=head2 pragma
-
-  # Get the user_version for the schema
-  my $version = Foo::Bar->pragma('user_version');
-
-The C<pragma> method provides a convenient method for fetching a pragma
-for a datase. See the SQLite documentation for more details.
-
-=head1 TABLE PACKAGE METHODS
-
-The example root package Foo::Bar::TableName is used in any examples.
-
-B<TO BE COMPLETED>
-
-=head1 TO DO
-
-- Support for intuiting reverse relations from foreign keys
-
-- Document the 'create' and 'table' params
+This code is compatible with ORLite version 1.25
 
 =head1 SUPPORT
 
 Bugs should be reported via the CPAN bug tracker at
 
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=ORLite>
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=ORLite-Array>
 
 For other issues, contact the author.
 
 =head1 AUTHOR
 
-Adam Kennedy E<lt>adamk@cpan.orgE<gt>
+Peter Makholm E<lt>peter@makholm.netE<gt>
 
 =head1 SEE ALSO
 
-L<ORLite::Mirror>, L<ORLite::Migrate>
+L<ORLite>
 
 =head1 COPYRIGHT
 
 Copyright 2008 - 2009 Adam Kennedy.
+                 2009 Peter Makholm
 
 This program is free software; you can redistribute
 it and/or modify it under the same terms as Perl itself.
