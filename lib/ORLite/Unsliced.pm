@@ -18,9 +18,13 @@ BEGIN {
 	$VERSION = '1.25';
 }
 
-
-
-
+BEGIN {
+    unless ( defined $INC{'ORLite.pm'} ) {
+        $INC{'ORLite.pm'} = __FILE__;
+        @ORLite::ISA = __PACKAGE__;
+        $ORLite::VERSION = '1.25';
+    }
+}
 
 #####################################################################
 # Code Generation
