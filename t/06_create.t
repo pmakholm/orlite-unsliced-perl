@@ -29,7 +29,7 @@ SCOPE: {
 package My::Test1;
 
 use strict;
-use ORLite {
+use ORLite::Array {
 	file   => '$file',
 	create => 1,
 	tables => 0,
@@ -72,7 +72,7 @@ SCOPE: {
 package My::Test2;
 
 use strict;
-use ORLite {
+use ORLite::Array {
 	file   => '$file',
 	create => sub {
 		my \$dbh = shift;
