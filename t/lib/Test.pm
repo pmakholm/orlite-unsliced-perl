@@ -1,9 +1,9 @@
 package t::lib::Test;
 
 use strict;
-use Exporter   ();
-use ORLite     ();
-use Test::More ();
+use Exporter      ();
+use ORLite::Array ();
+use Test::More    ();
 use File::Spec::Functions ':ALL';
 
 use vars qw{$VERSION @ISA @EXPORT};
