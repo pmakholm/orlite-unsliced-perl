@@ -9,22 +9,33 @@ use File::Spec   0.80 ();
 use File::Temp   0.20 ();
 use File::Path   2.04 ();
 use File::Basename  0 ();
-use Params::Util 0.33 qw{ _STRING _CLASS _HASHLIKE _CODELIKE };
+use Params::Util 0.33 ();
 use DBI         1.607 ();
 use DBD::SQLite  1.25 ();
 
 use vars qw{$VERSION};
 BEGIN {
-	$VERSION = '0.01';
+	$VERSION = '0.02';
 }
 
 BEGIN {
     unless ( defined $INC{'ORLite.pm'} ) {
         $INC{'ORLite.pm'} = __FILE__;
         @ORLite::ISA = __PACKAGE__;
-        $ORLite::VERSION = '1.25';
+        $ORLite::VERSION = '1.28';
     }
 }
+
+# Support for the 'prune' option
+my @PRUNE = ();
+END {
+       foreach ( @PRUNE ) {
+               next unless -e $_;
+               require File::Remove;
+               File::Remove::remove($_);
+       }
+}
+
 
 #####################################################################
 # Code Generation
@@ -34,14 +45,14 @@ sub import {
 
 	# Check for debug mode
 	my $DEBUG = 0;
-	if ( defined _STRING($_[-1]) and $_[-1] eq '-DEBUG' ) {
+	if ( defined Params::Util::_STRING($_[-1]) and $_[-1] eq '-DEBUG' ) {
 		$DEBUG = 1;
 		pop @_;
 	}
 
 	# Check params and apply defaults
 	my %params;
-	if ( defined _STRING($_[1]) ) {
+	if ( defined Params::Util::_STRING($_[1]) ) {
 		# Support the short form "use ORLite 'db.sqlite'"
 		%params = (
 			file     => $_[1],
@@ -49,7 +60,7 @@ sub import {
 			package  => undef, # Automatic
 			tables   => 1,
 		);
-	} elsif ( _HASHLIKE($_[1]) ) {
+	} elsif ( Params::Util::_HASHLIKE($_[1]) ) {
 		%params = %{ $_[1] };
 	} else {
 		Carp::croak("Missing, empty or invalid params HASH");
@@ -58,7 +69,7 @@ sub import {
 		$params{create} = 0;
 	}
 	unless (
-		defined _STRING($params{file})
+		defined Params::Util::_STRING($params{file})
 		and (
 			$params{create}
 			or
@@ -76,7 +87,7 @@ sub import {
 	unless ( defined $params{package} ) {
 		$params{package} = scalar caller;
 	}
-	unless ( _CLASS($params{package}) ) {
+	unless ( Params::Util::_CLASS($params{package}) ) {
 		Carp::croak("Missing or invalid package class");
 	}
 
@@ -87,8 +98,10 @@ sub import {
 		# Create the parent directory
 		my $dir = File::Basename::dirname($file);
 		unless ( -d $dir ) {
-			File::Path::mkpath( $dir, { verbose => 0 } );
+			my @dirs = File::Path::mkpath( $dir, { verbose => 0 } );
+            $class->prune(@dirs) if $params{prune};
 		}
+        $class->prune($file) if $params{prune};
 	}
 	my $pkg      = $params{package};
 	my $readonly = $params{readonly};
@@ -96,7 +109,7 @@ sub import {
 	my $dbh      = DBI->connect($dsn);
 
 	# Schema creation support
-	if ( $created and _CODELIKE($params{create}) ) {
+	if ( $created and Params::Util::_CODELIKE($params{create}) ) {
 		$params{create}->( $dbh );
 	}
 
@@ -443,9 +456,14 @@ sub dval {
 	} grep {
 		/^(?:package|sub)\b/
 	} split /\n/, $_[0];
-	print STDERR @trace, "\nCode saved as $filename\n\n";
+	# print STDERR @trace, "\nCode saved as $filename\n\n";
 
 	return 1;
+}
+
+sub prune {
+       my $class = shift;
+       push @PRUNE, map { File::Spec->rel2abs($_) } @_;
 }
 
 1;
@@ -462,6 +480,8 @@ ORLite::Array - Array based objects for ORLite
 
   # Used like the regular ORLite:
   package Foo;
+
+  # Simplest possible usage. See documentation for ORlite for advanced usage.
 
   use ORLite::Array 'data/sqlite.db';
 
@@ -509,7 +529,7 @@ B<THIS FEATURE IS EXPERIMENTAL AND SUBJECT TO CHANGE WITHOUT NOTICE>
 
 =head1 COMPATIBILITY
 
-This code is compatible with ORLite version 1.25
+This code is compatible with ORLite version 1.28
 
 =head1 SUPPORT
 

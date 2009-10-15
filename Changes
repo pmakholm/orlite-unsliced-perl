@@ -1,6 +1,7 @@
 Changes for ORLite::Array
 
 0.02 2009-09-XX
+    - Update to ORLite-1.28 compatibility
     - Fix testsuite not to depend on ORLite.pm
 
 0.01 2009-09-16
